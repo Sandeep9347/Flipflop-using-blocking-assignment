@@ -28,172 +28,183 @@ Blocking assignments execute sequentially in the given order, which makes it eas
 
 ### SR Flip-Flop (Blocking)
 ```verilog
-module sr_ff (
-    input wire S, R, clk,
-    output reg Q
-);
-    always @(posedge clk) begin
-        if (S & ~R)      Q = 1'b1;   // Set
-        else if (~S & R) Q = 1'b0;   // Reset
-        else if (S & R)  Q = 1'bx;   // Invalid
-        else             Q = Q;      // Hold
+module SRFF(s,r,clk,rst,q);
+input s,r,clk,rst;
+output reg q;
+always @(posedge clk)
+begin
+if (rst==1)
+q=0;
+else
+    begin
+    case ({s,r})
+    2'b00:q=q;
+    2'b01:q=1'b0;
+    2'b10:q=1'b1;
+    2'b11:q=1'bx;
+    endcase
     end
+end
 endmodule
 ```
 ### SR Flip-Flop Test bench 
 ```verilog
-`timescale 1ns/1ps
-module tb_sr_ff;
-    reg S, R, clk;
-    wire Q;
-
-    sr_ff uut (.S(S), .R(R), .clk(clk), .Q(Q));
-
-    initial clk = 0;
-    always #5 clk = ~clk; // 10ns clock
-
-    initial begin
-        $monitor("Time=%0t | S=%b R=%b | Q=%b", $time, S, R, Q);
-
-        S=0; R=0; #10;
-        S=1; R=0; #10;
-        S=0; R=1; #10;
-        S=1; R=1; #10;
-        S=0; R=0; #10;
-
-        $finish;
+`timescale 1ns / 1ps
+module tb_SRFF;
+reg s,r,clk,rst;
+wire q;
+SRFF uut(s,r,clk,rst,q);
+always 
+#5 clk =~clk;
+initial begin
+    clk=0;s=0;r=0;rst=1;
+    #10 rst=0;
+    #10 s=1;r=0;
+    #10 s=0;r=0;
+    #10 s=0;r=1;
+    #10 s=1;r=1;
+    #10 s=0;r=0;
+    #20 $finish;
     end
 endmodule
+
 
 
 ```
 #### SIMULATION OUTPUT
 
-<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/a21aa7f7-eb17-4cab-a45a-9db2eb82a8ae" />
+<img width="1916" height="1079" alt="Screenshot 2025-09-17 084451" src="https://github.com/user-attachments/assets/d7d3c863-dc5f-4abf-aa3a-4620a978922a" />
 
 
 ### JK Flip-Flop (Blocking)
 ```verilog
-module jk_ff (
-    input wire J, K, clk,
-    output reg Q
-);
-    always @(posedge clk) begin
-        if (~J & ~K) Q = Q;       // Hold
-        else if (J & ~K) Q = 1;   // Set
-        else if (~J & K) Q = 0;   // Reset
-        else if (J & K) Q = ~Q;   // Toggle
-    end
+module JKFF(j,k,clk,rst,q);
+input j,k,clk,rst;
+output reg q;
+always @(posedge clk)
+begin
+if (rst==1)
+q=0;
+else if (j==0 && k==0)
+q=q;
+else if (j==0 && k==1)
+q=1'b0;
+else if (j==1 && k==0)
+q=1'b1;
+else
+q=~q;
+    
+end
 endmodule
+
 ```
 ### JK Flip-Flop Test bench 
 ```verilog
-`timescale 1ns/1ps
-module tb_jk_ff;
-    reg J, K, clk;
-    wire Q;
-
-    jk_ff uut (.J(J), .K(K), .clk(clk), .Q(Q));
-
-    initial clk = 0;
-    always #5 clk = ~clk;
-
-    initial begin
-        $monitor("Time=%0t | J=%b K=%b | Q=%b", $time, J, K, Q);
-
-        J=0; K=0; #10;
-        J=1; K=0; #10;
-        J=0; K=1; #10;
-        J=1; K=1; #10;
-        J=1; K=1; #10;
-
-        $finish;
+`timescale 1ns / 1ps
+module tb_JKFF;
+reg j,k,clk,rst;
+wire q;
+JKFF uut(j,k,clk,rst,q);
+always 
+#5 clk =~clk;
+initial begin
+    clk=0;j=0;k=0;rst=1;
+    #10 rst=0;
+    #10 j=1;k=0;
+    #10 j=0;k=0;
+    #10 j=0;k=1;
+    #10 j=1;k=1;
+    #10 j=0;k=0;
+    #20 $finish;
     end
 endmodule
+
+
+
 ```
 #### SIMULATION OUTPUT
 
-<img width="1915" height="1079" alt="Screenshot 2025-09-17 211559" src="https://github.com/user-attachments/assets/f9de3494-7b0e-408b-96a8-00aaf3ea5a49" />
+<img width="1919" height="1079" alt="Screenshot 2025-09-17 090706" src="https://github.com/user-attachments/assets/f33a3a24-177a-4b6f-9c06-3a16326a1549" />
 
 ### D Flip-Flop (Blocking)
 ```verilog
-module d_ff (
-    input wire d, clk,
-    output reg Q
-);
-    always @(posedge clk) begin
-        Q = d;  // On clock edge, Q follows D
-    end
+module DFF(clk,rst,d,q);
+input clk,rst,d;
+output reg q;
+always @ (posedge clk)
+begin
+if(rst==1)
+    q=0;
+ else 
+    q=d;
+end
 endmodule
 ```
 ### D Flip-Flop Test bench 
 ```verilog
-`timescale 1ns/1ps
-module tb_d_ff;
-    reg d, clk;
-    wire Q;
-
-    d_ff uut (.d(d), .clk(clk), .Q(Q));
-
-    initial clk = 0;
-    always #5 clk = ~clk;
-
-    initial begin
-        $monitor("Time=%0t | D=%b | Q=%b", $time, d, Q);
-
-        d=0; #10;
-        d=1; #10;
-        d=0; #10;
-        d=1; #10;
-
-        $finish;
-    end
+`timescale 1ns / 1ps
+module DFF_tb;
+reg clk,rst,d;
+wire q;
+DFF uut(clk,rst,d,q);
+always #5 clk = ~clk;
+initial
+begin
+clk=0;
+d=0;
+rst=1;
+#10
+rst=0;
+d=0;
+#10
+d=1;
+end
 endmodule
-
-
 
 ```
 
 #### SIMULATION OUTPUT
 
-<img width="1912" height="1075" alt="image" src="https://github.com/user-attachments/assets/ae454884-59b4-43c7-a2bb-97046ef01c33" />
+<img width="1906" height="1079" alt="Screenshot 2025-09-19 111235" src="https://github.com/user-attachments/assets/c4988a04-f050-46f3-a14d-413527f34312" />
+
 
 ### T Flip-Flop (Blocking)
 ```verilog
-module t_ff (
-    input wire T, clk,
-    output reg Q
-);
-    always @(posedge clk) begin
-        if (T) Q = ~Q;  // Toggle when T=1
-        else   Q = Q;   // Hold when T=0
-    end
+module TFF(clk,rst,t,q);
+input clk,rst,t;
+output reg q;
+always @ (posedge clk)
+begin
+if(rst==1)
+    q=0;
+else if(t==0)
+    q=q;
+ else 
+    q=~q;
+end
 endmodule
-
 ```
 ### T Flip-Flop Test bench 
 ```verilog
-`timescale 1ns/1ps
-module tb_t_ff;
-    reg T, clk;
-    wire Q;
-
-    t_ff uut (.T(T), .clk(clk), .Q(Q));
-
-    initial clk = 0;
-    always #5 clk = ~clk;
-
-    initial begin
-        $monitor("Time=%0t | T=%b | Q=%b", $time, T, Q);
-
-        T=0; #10;
-        T=1; #10;
-        T=1; #10;
-        T=0; #10;
-
-        $finish;
-    end
+`timescale 1ns / 1ps
+module TFF_tb;
+reg clk,rst,t;
+wire q;
+TFF uut(clk,rst,t,q);
+always #5 clk = ~clk;
+initial
+begin
+clk=0;
+t=0;
+rst=1;
+#10
+rst=0;
+t=0;
+#10
+t=1;
+end
 endmodule
+
 
 
 
@@ -201,8 +212,9 @@ endmodule
 
 #### SIMULATION OUTPUT
 
-<img width="1916" height="1078" alt="image" src="https://github.com/user-attachments/assets/16ed3680-c1fd-43dc-8dc1-04936e17cb16" />
+<img width="1917" height="1079" alt="Screenshot 2025-09-17 093232" src="https://github.com/user-attachments/assets/2437e8b4-72db-4080-8e8f-46c1e352597e" />
 
+---
 
 ### RESULT
 
